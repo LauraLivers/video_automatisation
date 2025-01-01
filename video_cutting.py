@@ -94,7 +94,7 @@ def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir)
                 '-c:v', 'libx264', # video codec for H.254 format
                 '-preset', 'ultrafast', # fast processing, might bloat file-size
                 '-c:a', 'aac', # audio-codec used for compression
-                '-loglevel', 'error',
+                '-loglevel', 'quiet',
                 output_file
             ]
             subprocess.run(cmd, check=True)
@@ -102,7 +102,7 @@ def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir)
 
     return clips_by_beat
 
-def concatenate_clips_randomly(clips_by_beat, beat_sequence, output_file):
+def concatenate_clips_randomly(clips_by_beat, beat_sequence, output_file, song_file):
     """ Concatenate random video clips according to beat_sequence"""
     concat_file = os.path.join(os.path.dirname(output_file), "concat_list.txt")
     with open(concat_file, 'w') as f:
@@ -117,10 +117,13 @@ def concatenate_clips_randomly(clips_by_beat, beat_sequence, output_file):
         '-f', 'concat', #specify format of input/output
         '-safe', '0',
         '-i', concat_file,
+        '-i', song_file,
+        '-map', '0:v:0',  # input 1: video
+        '-map', '1:a:0',  # input 2: audio
         '-c:v', 'libx264',
         '-preset', 'ultrafast',
         '-c:a', 'aac',
-        '-loglevel', 'debug',
+        '-loglevel', 'quiet',
         output_file
     ]
     subprocess.run(cmd, check=True)

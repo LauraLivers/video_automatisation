@@ -19,15 +19,16 @@ def extract_beats_from_song(song_file):
     return beat_sequence
 
 def _extract_audio_from_video(video_file, output_audio):
-    """ Internal function to extract audio from video file to
+    """ Internal function to extract audio from video files to
     compare with beat_sequence """
     cmd = [
-        "ffmpeg",
-        "-i", video_file, # i: input
-        "-q:a", "0", #q:a set audio quality (0= best, 0=worst)
-        "-map", "a", #map: select stream from input file (a=audio, v=video, s=subtitle, t=all data)
+        'ffmpeg',
+        '-i', video_file, # i: input
+        '-q:a', '0', #q:a set audio quality (0= best, 0=worst)
+        '-map', 'a', #map: select stream from input file (a=audio, v=video, s=subtitle, t=all data)
         output_audio, #output filename
-        "-y" #enforce overwriting file
+        '-y', #enforce overwriting file
+        '-loglevel', 'error' # supress default message
     ]
     subprocess.run(cmd, check=True)
     return output_audio
@@ -42,7 +43,7 @@ def _align_song_to_video(song_file, video_audio):
     if sr_song != sr_video:
         video = librosa.resample(video, orig_sr=sr_video, target_sr=sr_song)
     # correlate original-audio with video-audio to find similarity
-    correlation = correlate(video, song, mode="full")
+    correlation = correlate(video, song, mode='full')
     # contains all possible shifts from correlation => find maximum
     lag = np.argmax(correlation) - len(song)
     # divide lag by sampling rate to get offset in seconds
@@ -51,14 +52,19 @@ def _align_song_to_video(song_file, video_audio):
     return offset_time
 
 def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir):
-    """ Cut video based on beat sequence from the original song file. """
+    """ Cut video based on beat sequence from the original song file."""
     os.makedirs(output_dir, exist_ok=True)
     video_files = [
         os.path.join(video_folder, f)
         for f in os.listdir(video_folder)
-        if f.endswith((".mp4", ".mov"))
+        if f.endswith(('.mp4', '.MP4','.mov', '.MOV', '.avi', '.AVI', '.mkv', '.MKV' ))
     ]
-    clips_by_beat = {beat["id"]: [] for beat in beat_sequence}
+    print("Detected video files:", video_files) # debug
+
+    if not video_files:
+        print("Error: No video files found in the folder.")
+        return
+    clips_by_beat = {beat['id']: [] for beat in beat_sequence}
     # iterate over videos
     for video_index, video_file in enumerate(video_files, start=1):
         # set up
@@ -68,12 +74,12 @@ def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir)
         # iterate over beat_sequence from original-audio
         for i, beat in enumerate(beat_sequence):
             # ensure start aligns with calculated lag between original-audio and video
-            beat_start = beat["time"] + offset
+            beat_start = beat['time'] + offset
             if i + 1 < len(beat_sequence):
-                beat_end = beat_sequence[i + 1]["time"] + offset
+                beat_end = beat_sequence[i + 1]['time'] + offset
             else:
                 # Default value in seconds for the last beat
-                beat_end = beat_start + 4.5
+                beat_end = beat_start + 9.5
             # get rid of invalid beats
             if beat_start < 0:
                 continue
@@ -81,56 +87,44 @@ def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir)
                 output_dir, f"{beat['id']}_video{video_index}.mp4"
             )
             cmd = [
-                "ffmpeg",
-                "-ss", f"{beat_start:.2f}", # start time
-                "-i", video_file,
-                "-to", f"{beat_end - beat_start:.2f}", #length
-                "-c:v", "libx264", # video codec for H.254 format
-                "-preset", "ultrafast", # fast processing, might bloat file-size
-                "-c:a", "aac", # audio-codec used for compression
+                'ffmpeg',
+                '-ss', f"{beat_start:.2f}", # start time
+                '-i', video_file,
+                '-to', f"{beat_end - beat_start:.2f}", #length
+                '-c:v', 'libx264', # video codec for H.254 format
+                '-preset', 'ultrafast', # fast processing, might bloat file-size
+                '-c:a', 'aac', # audio-codec used for compression
+                '-loglevel', 'error',
                 output_file
             ]
             subprocess.run(cmd, check=True)
-            clips_by_beat[beat["id"]].append(output_file)
+            clips_by_beat[beat['id']].append(output_file)
+
     return clips_by_beat
 
 def concatenate_clips_randomly(clips_by_beat, beat_sequence, output_file):
     """ Concatenate random video clips according to beat_sequence"""
     concat_file = os.path.join(os.path.dirname(output_file), "concat_list.txt")
-    with open(concat_file, "w") as f:
+    with open(concat_file, 'w') as f:
         for beat in beat_sequence:
-            if clips_by_beat[beat["id"]]:
+            if clips_by_beat[beat['id']]:
                 # for every beat in sequence chose a random take
-                chosen_clip = random.choice(clips_by_beat[beat["id"]])
-                f.write(f"file '{chosen_clip}'\n")
+                chosen_clip = random.choice(clips_by_beat[beat['id']])
+                clip_path = os.path.abspath(chosen_clip)
+                f.write(f"file '{clip_path}'\n")
     cmd = [
-        "ffmpeg",
-        "-f", "concat", #specify format of input/output
-        "-safe", "0",
-        "-i", concat_file,
-        "-c:v", "libx264",
-        "-preset", "ultrafast",
-        "-c:a", "aac",
+        'ffmpeg',
+        '-f', 'concat', #specify format of input/output
+        '-safe', '0',
+        '-i', concat_file,
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-c:a', 'aac',
+        '-loglevel', 'debug',
         output_file
     ]
     subprocess.run(cmd, check=True)
     print(f"Created final video: {output_file}")
 
-# Paths
-audio_file = "/Users/laura/Library/CloudStorage/Dropbox/2023 Überbrückungsprojekt/Milena Patagonia/Dodji_feat Laura Livers.wav"
-video_folder = "/Users/laura/Library/CloudStorage/Dropbox/2023 Überbrückungsprojekt/Milena Patagonia/VideoShoot"
-output_dir = "/Users/laura/Desktop/DIGCRE/VideoCutOutput5"
-final_output = os.path.join(output_dir, "cut_video.mp4")
 
-# Step 1: Extract beat sequence from the song
-print("Analyzing song file...")
-beat_sequence = extract_beats_from_song(audio_file)
-
-# Step 2: Cut videos based on beat sequence
-print("Cutting videos based on beat sequence...")
-clips_by_beat = cut_videos_by_song_beats(video_folder, beat_sequence, audio_file, output_dir)
-
-# Step 3: Concatenate random clips into the final video
-print("Combining clips into final video...")
-concatenate_clips_randomly(clips_by_beat, beat_sequence, final_output)
 

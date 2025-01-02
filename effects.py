@@ -7,8 +7,10 @@ import random
 
 
 def rgb_trail(video_input_path, video_output_path, red_lag=0, green_lag=5, blue_lag=10):
-    """ Applies a lag to each color channel to create chromatic aberration effect
-        lags are in fps, stating how many frames earlier the color should display"""
+    """ Applies a lag to RGB Channels.
+        lag unit    : fps
+        trigger     : % chance
+        duration    : [1, 3] seconds """
     cap = cv2.VideoCapture(video_input_path)
     if not cap.isOpened():
         raise ValueError("rgb trail: Input video can't be opened")

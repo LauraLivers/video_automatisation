@@ -20,7 +20,7 @@ def _load_lyrics(csv_file, song_id):
 
 # Function to detect vocal segments with Whisper (including word-level timestamps)
 def _detect_vocal_segments_with_whisper(audio_file):
-    model = whisper.load_model("base", weights_only=True)
+    model = whisper.load_model("base")
     result = model.transcribe(audio_file, word_timestamps=True, language='de')  # Adjust language code as needed
     timestamps = []
     for segment in result['segments']:
@@ -55,18 +55,29 @@ def _manual_split_into_syllables(lyric):
 def _match_lyrics_to_speech(lyrics_df, timestamps):
     matched_lyrics = []
     all_lyrics = lyrics_df['lyric'].tolist()
-    syllable_idx = 0
     lyric_idx = 0
-    for start_time, end_time, word in timestamps:
-        if lyric_idx < len(all_lyrics):
-            lyric = all_lyrics[lyric_idx]
-            syllables = _split_into_syllables(lyric)
-            if syllable_idx < len(syllables):
-                matched_lyrics.append((start_time, end_time, syllables[syllable_idx]))
-                syllable_idx += 1
-                if syllable_idx >= len(syllables):
-                    lyric_idx += 1
-                    syllable_idx = 0
+    timestamp_idx = 0
+
+    while lyric_idx < len(all_lyrics) and timestamp_idx < len(timestamps):
+        lyric = all_lyrics[lyric_idx]
+
+        # Calculate start and end times for the current lyric
+        num_words = len(lyric.split())
+        start_time = timestamps[timestamp_idx][0]
+        end_time = timestamps[min(timestamp_idx + num_words - 1, len(timestamps) - 1)][1]
+
+        # Add matched lyric
+        matched_lyrics.append((start_time, end_time, lyric))
+
+        # Move to the next lyric and update timestamp index
+        timestamp_idx += num_words
+        lyric_idx += 1
+
+    # Ensure all lyric lines are processed
+    while lyric_idx < len(all_lyrics):
+        print(f"Warning: No matching timestamps found for lyric: '{all_lyrics[lyric_idx]}'.")
+        lyric_idx += 1
+
     print("Matched Lyrics with Timestamps:", matched_lyrics)
     return matched_lyrics
 
@@ -76,9 +87,9 @@ def _sync_lyrics_to_video(matched_lyrics, video_file, output_file):
     text_clips = []
     second_text_clips = []  # For the second set of lyrics (with different color and position)
 
-    for start_time, end_time, syllable in matched_lyrics:
+    for start_time, end_time, lyric in matched_lyrics:
         # First text clip (original)
-        text_clip = TextClip(text=syllable,
+        text_clip = TextClip(text=lyric,
                              font='Helvetica',
                              color=(255, 255, 255, 255),
                              size=(video_clip.w, None))
@@ -86,7 +97,7 @@ def _sync_lyrics_to_video(matched_lyrics, video_file, output_file):
             start_time)
 
         # Second text clip (different color and position)
-        second_text_clip = TextClip(text=syllable, font='Helvetica', color=(192, 192, 192, 128), size=(video_clip.w, None))
+        second_text_clip = TextClip(text=lyric, font='Helvetica', color=(192, 192, 192, 128), size=(video_clip.w, None))
         second_text_clip = (second_text_clip.with_position('center', 'bottom')).with_duration(
             end_time - start_time).with_start(start_time)  # Slightly lower and to the right
 

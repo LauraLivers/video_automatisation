@@ -51,32 +51,88 @@ def adjust_exposure(video_input, video_output, brightness=-0.05, contrast=1.05, 
 
 
 
+# def apply_teal_orange(video_input_color, video_output_color, intensity=0.8):
+#     """ function to apply the teal-orange filter while retaining audio and format"""
+#     cap = cv2.VideoCapture(video_input_color)
+#     if not cap.isOpened():
+#         raise ValueError("T/O:Input video cannot be opened")
+#
+#     # get input video properties to ensure consistency in output!
+#     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+#     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+#     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+#     fps = int(cap.get(cv2.CAP_PROP_FPS))
+#     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+#
+#     temp_video = 'temp_video.mp4'
+#     out = cv2.VideoWriter(temp_video, fourcc, fps, (frame_width, frame_height))
+#     if not out.isOpened():
+#         raise ValueError(f"T/O: Output video cannot be created: {temp_video}")
+#
+#     frame_count = 0
+#     prev_time = 0
+#
+#     while True:
+#         ret, frame = cap.read()
+#         if not ret:
+#             break
+#
+#         current_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # Get current time in seconds
+#
+#         if current_time > prev_time:  # Ensure we're not skipping frames
+#             processed_frame = _teal_orange(frame, intensity)
+#             out.write(processed_frame)
+#             prev_time = current_time
+#
+#         frame_count += 1
+#         if frame_count % 100 == 0 or frame_count == total_frames:
+#             print(f"T/O: Processed {frame_count} / {total_frames} frames")
+#
+#     cap.release()
+#     out.release()
+#
+#     print(f"Final video saved to {video_output_color}")
+#     _add_audio(video_input_color, temp_video, video_output_color)
+#     if os.path.exists(temp_video):
+#         os.remove(temp_video)
+
 def apply_teal_orange(video_input_color, video_output_color, intensity=0.8):
-    """ function to apply the teal-orange filter while retaining audio and format"""
+    """ Function to apply Hollywood filter """
     cap = cv2.VideoCapture(video_input_color)
     if not cap.isOpened():
-        raise ValueError("T/O:Input video cannot be opened")
+        raise ValueError("T/O: Input video cannot be opened")
 
-    # get input video properties to ensure consistency in output!
     frame_width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     frame_height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    fps = int(cap.get(cv2.CAP_PROP_FPS))
+    fps = cap.get(cv2.CAP_PROP_FPS)  # Don't cast to int, keep the exact fps
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
 
     temp_video = 'temp_video.mp4'
     out = cv2.VideoWriter(temp_video, fourcc, fps, (frame_width, frame_height))
     if not out.isOpened():
-        raise ValueError(f"T/O: Output video cannot be created: {temp_video}") #debug
+        raise ValueError(f"T/O: Output video cannot be created: {temp_video}")
+
     frame_count = 0
+    prev_time = 0
+    prev_frame_position = 0
 
     while True:
         ret, frame = cap.read()
         if not ret:
             break
 
-        processed_frame = _teal_orange(frame, intensity)
-        out.write(processed_frame)
+        current_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # Get current time in seconds
+
+        if current_time > prev_time:
+            processed_frame = _teal_orange(frame, intensity)
+            out.write(processed_frame)
+            prev_time = current_time
+
+        current_position = cap.get(cv2.CAP_PROP_POS_FRAMES)
+        if current_position != prev_frame_position:
+            print(f"Writing frame {frame_count} at timestamp {current_time:.4f}")
+        prev_frame_position = current_position
 
         frame_count += 1
         if frame_count % 100 == 0 or frame_count == total_frames:
@@ -84,9 +140,14 @@ def apply_teal_orange(video_input_color, video_output_color, intensity=0.8):
 
     cap.release()
     out.release()
+
+    print(f"Final video saved to {video_output_color}")
     _add_audio(video_input_color, temp_video, video_output_color)
+
     if os.path.exists(temp_video):
         os.remove(temp_video)
+
+
 
 
 

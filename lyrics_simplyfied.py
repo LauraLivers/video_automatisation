@@ -110,18 +110,3 @@ def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(
     else:
         print("No lyrics to add, skipping video creation.")
 
-
-lyrics = [
-    (6.0, 12, "ah"),
-    (12.0, 15.0, 'I bi Wassermasse, stoubtroche'),
-    (15.5, 18.5, 'I bi Höllequal, heilige Gral'),
-    (18.7, 20.9, 'I bi iisfall, Hitzestau'),
-    (21, 24.7, 'I bi Liebi, Liecht, Hass Niid'),
-    (25, 30.6, 'I bi Wäutwiit niemert im Nüüt'),
-    (31, 34.0, 'I bi aus immer itzt u nie'),
-    (34.2 , 38, 'zur gliiche Ziit, vertrou mer blind'),
-]
-
-#sync_lyrics_manually(lyrics ,'04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually.mp4')
-
-sync_lyrics_grid_to_video(lyrics, '04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually7.mp4')

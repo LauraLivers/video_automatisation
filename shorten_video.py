@@ -1,13 +1,13 @@
 import subprocess
 
 
-def shorten_video_seconds(input_video_path, output_video_path):
+def shorten_video_seconds(input_video_path, output_video_path, seconds):
     """ Creates a copy of the video shortened to -t , 'x' """
     command = [
         "ffmpeg",
         "-y",
         "-i", input_video_path,
-        "-t", "90",  # output length in seconds
+        "-t", str(seconds),  # output length in seconds
         "-c:v", "copy",
         "-c:a", "copy",
         output_video_path

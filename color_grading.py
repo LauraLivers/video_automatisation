@@ -17,8 +17,6 @@ def _teal_orange(frame, intensity=0.8):
 
     return cv2.cvtColor(graded_lab, cv2.COLOR_LAB2BGR)
 
-
-
 def _add_audio(input_video_path, processed_video_path, output_path):
     """ Internal function to retain audio """
     command = [
@@ -33,6 +31,24 @@ def _add_audio(input_video_path, processed_video_path, output_path):
         output_path
     ]
     subprocess.run(command, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+def adjust_exposure(video_input, video_output, brightness=-0.05, contrast=1.05, gamma=0.95):
+    """ Function to adjust brightness and contrast
+        brightness : [-1, 1], 0 = original
+        contrast [0, 1], 1.0 = original
+        gamma [> 0], 1.0 = original, < 1.0 darken midtones, > 1.0 lighten midtones"""
+    ffmpeg_command = [
+        'ffmpeg',
+        '-threads', '8',
+        '-i', video_input,
+        '-vf', f'eq=brightness={brightness}:contrast={contrast}:gamma={gamma}',
+        '-preset', 'ultrafast',
+        '-c:a', 'copy',
+        video_output
+    ]
+    subprocess.run(ffmpeg_command)
+    print(f'Exposure: saved video to {video_output}')
+
 
 
 def apply_teal_orange(video_input_color, video_output_color, intensity=0.8):
@@ -71,6 +87,7 @@ def apply_teal_orange(video_input_color, video_output_color, intensity=0.8):
     _add_audio(video_input_color, temp_video, video_output_color)
     if os.path.exists(temp_video):
         os.remove(temp_video)
+
 
 
 def apply_black_white(video_input_color, video_output_color):

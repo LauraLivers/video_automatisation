@@ -2,6 +2,8 @@ from moviepy import *
 
 
 
+
+
 def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
     """ Function to place the text in a simple manner using manual timestamps"""
     video_clip = VideoFileClip(video_input_file)
@@ -30,7 +32,7 @@ def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
 
 
 
-def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(5, 10), first_letter_scale=1.8, fade_duration=0.5):
+def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(5, 12), first_letter_scale=1.8):
 
     # Load the video
     video_clip = VideoFileClip(video_file)
@@ -50,10 +52,12 @@ def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(
 
         for word in words:
             # Reserve space for the first letter
-            first_letter_space = int(first_letter_scale)  # First letter occupies multiple cells
+            first_letter_space = first_letter_scale  # First letter occupies scaled cells
 
-            # Check if word fits in the remaining row space, else move to the next row
-            word_length_in_cells = first_letter_space + len(word) - 1  # First letter + remaining letters
+            # Calculate total cells needed for the word
+            word_length_in_cells = first_letter_space + len(word) - 1
+
+            # Check if the word fits in the current row, otherwise move to the next row
             if current_col + word_length_in_cells > cols:
                 current_col = 0
                 current_row += 1
@@ -63,34 +67,40 @@ def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(
                 print(f"Warning: No space left in the grid for word: '{word}'")
                 break
 
+            # Place each character in the grid
             for idx, char in enumerate(word):
-                # Adjust the position based on grid cell usage
+                # Calculate character size and position
                 if idx == 0:  # First letter
-                    cell_span = first_letter_space
+                    char_width = cell_width * first_letter_scale
                 else:  # Subsequent letters
-                    cell_span = 1
+                    char_width = cell_width
 
-                # Calculate character position
+                # Calculate position
                 x_pos = current_col * cell_width
                 y_pos = current_row * cell_height
 
-                # Create TextClip for the character
+                # Ensure the character fills its grid cell
                 char_clip = TextClip(
                     text=char,
                     font='Helvetica',
                     color=(240, 215, 19, 255),
-                    size=(int(cell_width * cell_span), int(cell_height))  # Fill the grid cell
+                    size=(int(char_width)+50, int(cell_height)+50),
+                    stroke_width=4,
+                    stroke_color=(145, 145, 134)
                 ).with_position((x_pos, y_pos)).with_duration(end_time - start_time).with_start(start_time)
 
-                #char_clip = char_clip.crossfadein(fade_duration).crossfadeout(fade_duration)
-
                 text_clips.append(char_clip)
-                current_col += cell_span  # Move horizontally by the number of cells the character occupies
+
+                # Update current column, accounting for first letter width
+                if idx == 0:
+                    current_col += first_letter_scale  # Add space for the larger first letter
+                else:
+                    current_col += 1  # Regular spacing for subsequent letters
 
             # Add a blank cell after the word
             current_col += 1
 
-    # Combine text clips with the video
+        # Combine text clips with the video
     if text_clips:
         final_clip = CompositeVideoClip([video_clip] + text_clips)
         final_clip.audio = video_clip.audio  # Retain original audio
@@ -108,9 +118,9 @@ lyrics = [
     (21, 24.7, 'I bi Liebi, Liecht, Hass Niid'),
     (25, 30.6, 'I bi Wäutwiit niemert im Nüüt'),
     (31, 34.0, 'I bi aus immer itzt u nie'),
-    (34.2 , 38, 'zur gliiche Ziit, vertrou mer blid'),
+    (34.2 , 38, 'zur gliiche Ziit, vertrou mer blind'),
 ]
 
 #sync_lyrics_manually(lyrics ,'04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually.mp4')
 
-sync_lyrics_grid_to_video(lyrics, '04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually.mp4')
+sync_lyrics_grid_to_video(lyrics, '04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually6.mp4')

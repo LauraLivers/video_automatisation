@@ -1,19 +1,17 @@
 from moviepy import *
 
 
-
-
-
 def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
-    """ Function to place the text in a simple manner using manual timestamps"""
+    """ Function to place the text in a simple manner using manual timestamps
+    Customisation : font, color, position"""
     video_clip = VideoFileClip(video_input_file)
     text_clips = []
 
     for start_time, end_time, lyric in lyrics:
         text_clip = TextClip(
             text=lyric,
-            font='Helvetica',
-            color=(255, 255, 255, 255),
+            font='Helvetica', # use any locally installed font
+            color=(255, 255, 255, 255), # RGB, RGBA, Hex, name
             size=(video_clip.w, None)
         )
         text_clip = (text_clip.with_position('center', 'top')
@@ -24,7 +22,7 @@ def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
 
     if text_clips:
         final_clip = CompositeVideoClip([video_clip] + text_clips)
-        final_clip.audio = video_clip.audio  # Retain original audio
+        final_clip.audio = video_clip.audio
         final_clip.write_videofile(video_output_file, codec='libx264', audio_codec='aac')
         print(f"Video saved to {video_output_file}")
     else:
@@ -33,8 +31,17 @@ def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
 
 
 def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(5, 12), first_letter_scale=1.8):
-
-    # Load the video
+    """ Function to place text in a more advanced manner using manual timestamps and a grid layout
+        Customisaton :
+        grid_size (r X c): ensure minimum # columns = longest word + 1 or letters might be cut off
+        first_letter_scale: first letter of each word is scaled
+        font : use any locally installed font. trouble shoot by using absolute path
+        color : RGB, RGBA, Hex, names
+        size : fallback in case method not label
+        stroke_width : border thickness
+        stroke_color : border color
+        method : label (autosized) or caption (absolute size)
+        """
     video_clip = VideoFileClip(video_file)
     video_width, video_height = video_clip.w, video_clip.h
 
@@ -52,58 +59,52 @@ def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(
 
         for word in words:
             # Reserve space for the first letter
-            first_letter_space = first_letter_scale  # First letter occupies scaled cells
+            first_letter_space = first_letter_scale
 
-            # Calculate total cells needed for the word
+            # Total number of cells needed
             word_length_in_cells = first_letter_space + len(word) - 1
 
-            # Check if the word fits in the current row, otherwise move to the next row
+            # check space available in row
             if current_col + word_length_in_cells > cols:
                 current_col = 0
                 current_row += 1
 
-            # Stop if grid is full
             if current_row >= rows:
-                print(f"Warning: No space left in the grid for word: '{word}'")
+                print(f"Warning: No space left in the grid for word: '{word}'. Split list entry further")
                 break
 
             # Place each character in the grid
             for idx, char in enumerate(word):
-                # Calculate character size and position
                 if idx == 0:  # First letter
                     char_width = cell_width * first_letter_scale
-                else:  # Subsequent letters
+                else:
                     char_width = cell_width
 
-                # Calculate position
                 x_pos = current_col * cell_width
                 y_pos = current_row * cell_height
 
-                # Ensure the character fills its grid cell
+                # Customisation
                 char_clip = TextClip(
                     text=char,
-                    font='Helvetica',
-                    color=(240, 215, 19, 255),
+                    font='Futura', # use any locally installed font
+                    color=(240, 215, 19, 255), # RGB, RGBA, Hex, name
                     size=(int(char_width)+50, int(cell_height)+50),
                     stroke_width=4,
-                    stroke_color=(145, 145, 134)
+                    stroke_color=(145, 145, 134),
+                    method='label' # autosize letters
                 ).with_position((x_pos, y_pos)).with_duration(end_time - start_time).with_start(start_time)
 
                 text_clips.append(char_clip)
 
-                # Update current column, accounting for first letter width
                 if idx == 0:
                     current_col += first_letter_scale  # Add space for the larger first letter
                 else:
                     current_col += 1  # Regular spacing for subsequent letters
+            current_col += 1 # blank space after each word
 
-            # Add a blank cell after the word
-            current_col += 1
-
-        # Combine text clips with the video
     if text_clips:
         final_clip = CompositeVideoClip([video_clip] + text_clips)
-        final_clip.audio = video_clip.audio  # Retain original audio
+        final_clip.audio = video_clip.audio
         final_clip.write_videofile(output_file, codec='libx264', audio_codec='aac')
         print(f"Video saved to {output_file}")
     else:
@@ -123,4 +124,4 @@ lyrics = [
 
 #sync_lyrics_manually(lyrics ,'04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually.mp4')
 
-sync_lyrics_grid_to_video(lyrics, '04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually6.mp4')
+sync_lyrics_grid_to_video(lyrics, '04 video_output_effects_rgb2.mp4', '05 video_output_lyrics_manually7.mp4')

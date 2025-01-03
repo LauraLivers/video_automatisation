@@ -1,5 +1,6 @@
 import os
 import librosa
+import librosa.display
 import subprocess
 from scipy.signal import correlate
 import numpy as np
@@ -16,7 +17,9 @@ def extract_beats_from_song(song_file):
     beat_times = librosa.frames_to_time(beat_frames, sr=sr)
     # names for later use
     beat_sequence = [{"id": f"beat{i+1}", "time": beat_time} for i, beat_time in enumerate(beat_times)]
+
     return beat_sequence
+
 
 def _extract_audio_from_video(video_file, output_audio):
     """ Internal function to extract audio from video files to
@@ -31,6 +34,8 @@ def _extract_audio_from_video(video_file, output_audio):
         '-loglevel', 'error' # supress default message
     ]
     subprocess.run(cmd, check=True)
+
+
     return output_audio
 
 
@@ -48,8 +53,11 @@ def _align_song_to_video(song_file, video_audio):
     lag = np.argmax(correlation) - len(song)
     # divide lag by sampling rate to get offset in seconds
     offset_time = lag / sr_song
+
     print(f"Offset between song and video: {offset_time:.2f} seconds") # debug
     return offset_time
+
+
 
 def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir):
     """ Cut video based on beat sequence from the original song file."""
@@ -88,9 +96,10 @@ def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir)
             )
             cmd = [
                 'ffmpeg',
-                '-ss', f"{beat_start:.2f}", # start time
+                '-accurate_seek',
+                '-ss', f"{beat_start:.10f}", # start time
                 '-i', video_file,
-                '-to', f"{beat_end - beat_start:.2f}", #length
+                '-to', f"{beat_end - beat_start:.10f}", #length
                 '-c:v', 'libx264', # video codec for H.254 format
                 '-preset', 'ultrafast', # fast processing, might bloat file-size
                 '-c:a', 'aac', # audio-codec used for compression
@@ -98,12 +107,14 @@ def cut_videos_by_song_beats(video_folder, beat_sequence, song_file, output_dir)
                 output_file
             ]
             subprocess.run(cmd, check=True)
+
             clips_by_beat[beat['id']].append(output_file)
 
     return clips_by_beat
 
 def concatenate_clips_randomly(clips_by_beat, beat_sequence, output_file, song_file):
     """ Concatenate random video clips according to beat_sequence"""
+
     concat_file = os.path.join(os.path.dirname(output_file), "concat_list.txt")
     with open(concat_file, 'w') as f:
         for beat in beat_sequence:

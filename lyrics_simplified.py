@@ -1,7 +1,7 @@
 from moviepy import *
 
 
-def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
+def sync_lyrics_manually(lyrics, video_input_file, video_output_file, color=(255, 255, 255, 255)):
     """ Function to place the text in a simple manner using manual timestamps
     Customisation : font, color, position"""
     video_clip = VideoFileClip(video_input_file)
@@ -11,7 +11,7 @@ def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
         text_clip = TextClip(
             text=lyric,
             font='Helvetica', # use any locally installed font
-            color=(255, 255, 255, 255), # RGB, RGBA, Hex, name
+            color=color, # RGB, RGBA, Hex, name
             size=(video_clip.w, None)
         )
         text_clip = (text_clip.with_position('center', 'top')
@@ -30,7 +30,7 @@ def sync_lyrics_manually(lyrics, video_input_file, video_output_file):
 
 
 
-def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(5, 12), first_letter_scale=1.8):
+def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, color=(255, 255, 255, 255), grid_size=(5, 12), first_letter_scale=1.8):
     """ Function to place text in a more advanced manner using manual timestamps and a grid layout
         Customisaton :
         grid_size (r X c): ensure minimum # columns = longest word + 1 or letters might be cut off
@@ -87,10 +87,10 @@ def sync_lyrics_grid_to_video(lyrics_lines, video_file, output_file, grid_size=(
                 char_clip = TextClip(
                     text=char,
                     font='Futura', # use any locally installed font
-                    color=(240, 215, 19, 255), # RGB, RGBA, Hex, name
+                    color=color, # RGB, RGBA, Hex, name
                     size=(int(char_width)+50, int(cell_height)+50),
-                    stroke_width=4,
-                    stroke_color=(145, 145, 134),
+                    stroke_width=8,
+                    stroke_color=(125, 125, 125),
                     method='label' # autosize letters
                 ).with_position((x_pos, y_pos)).with_duration(end_time - start_time).with_start(start_time)
 

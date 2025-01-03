@@ -4,6 +4,7 @@ from color_grading import _add_audio
 from collections import deque
 import os
 import random
+import subprocess
 
 
 def rgb_trail(video_input_path, video_output_path, red_lag=0, green_lag=5, blue_lag=10):
@@ -72,3 +73,19 @@ def rgb_trail(video_input_path, video_output_path, red_lag=0, green_lag=5, blue_
     if os.path.exists(temp_video):
         os.remove(temp_video)
 
+
+def apply_slow_motion(input_video, output_video, slow_down_factor=0.5):
+    cmd = [
+        'ffmpeg',
+        '-i', input_video,
+        '-filter:v', f"setpts={slow_down_factor}*PTS",
+        '-c:v', 'libx264',
+        '-preset', 'ultrafast',
+        '-c:a', 'aac',
+        '-map', '0:v:0',
+        '-map', '0:a:0',
+        '-y',
+        output_video
+    ]
+    subprocess.run(cmd, check=True)
+    print(f"Video saved in slow motion to: {output_video}")

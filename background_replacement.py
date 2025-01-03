@@ -86,50 +86,70 @@ def _add_audio(input_video_path, processed_video_path, output_path):
 
 
 def process_video_with_video_background(input_path, output_path, background_video_path):
-    """ function to replace background """
     temp_video_path = output_path.replace('.mp4', '_temp.mp4')
-    # open up original video and background video
+
     cap = cv2.VideoCapture(input_path)
     background_cap = cv2.VideoCapture(background_video_path)
+
     if not cap.isOpened():
         raise FileNotFoundError(f"Cannot open input video file: {input_path}")
     if not background_cap.isOpened():
         raise FileNotFoundError(f"Cannot open background video file: {background_video_path}")
-    fps = int(cap.get(cv2.CAP_PROP_FPS)) # get frames per second of original video
-    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH)) # get width of original video
-    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT)) # get height of original video
+
+    fps = cap.get(cv2.CAP_PROP_FPS)  # Use original video's fps (no casting to int, preserve the exact fps)
+    width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
     total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-    # prepare output file
+
     out = cv2.VideoWriter(temp_video_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (width, height))
-    # mediapipe image segmentation (specialised for humans)
+
     mp_selfie_segmentation = mp.solutions.selfie_segmentation
     segmentation_model = mp_selfie_segmentation.SelfieSegmentation(model_selection=1)
+
     previous_mask = None
-    for frame_idx in range(total_frames):
+    frame_idx = 0
+    prev_time = 0
+
+    while True:
         ret, frame = cap.read()
         if not ret:
             break
         ret_bg, background_frame = background_cap.read()
+
         if not ret_bg:
-            background_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+            background_cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # Reset background video if it reaches the end
             ret_bg, background_frame = background_cap.read()
+
+        # Ensure the background frame is resized correctly
         background_resized = _crop_background_to_input_aspect_ratio(background_frame, width, height)
+
+        # Enhance the foreground frame
         enhanced_frame = _enhance_frame(frame)
+
+        # Generate and stabilize the foreground mask
         current_mask = _generate_foreground_mask(enhanced_frame, segmentation_model)
         stabilized_mask = _stabilize_mask(current_mask, previous_mask)
         previous_mask = stabilized_mask
-        final_frame = _replace_background_with_feathering(frame, background_resized, stabilized_mask)
-        out.write(final_frame)
 
+        # Replace the background with the stabilized mask
+        final_frame = _replace_background_with_feathering(frame, background_resized, stabilized_mask)
+
+        # Ensure frames are written with no delay, based on the current time in the video
+        current_time = cap.get(cv2.CAP_PROP_POS_MSEC) / 1000  # Get current time in seconds
+        if current_time > prev_time:  # Only write if the time progresses (no skipped frames)
+            out.write(final_frame)
+            prev_time = current_time
+
+        frame_idx += 1
         if frame_idx % 100 == 0:
-            print(f"Processed frame {frame_idx + 1}/{total_frames}")
+            print(f"Processed frame {frame_idx}/{total_frames}")
+
     cap.release()
     background_cap.release()
     out.release()
 
     _add_audio(input_path, temp_video_path, output_path)
     os.remove(temp_video_path)
-
 
 
 def process_all_videos_with_video_background(video_input_background_dir, output_dir, background_video_path):

@@ -7,7 +7,7 @@ def shorten_video_seconds(input_video_path, output_video_path):
         "ffmpeg",
         "-y",
         "-i", input_video_path,
-        "-t", "40",  # output length in seconds
+        "-t", "90",  # output length in seconds
         "-c:v", "copy",
         "-c:a", "copy",
         output_video_path

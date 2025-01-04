@@ -1,7 +1,11 @@
 <h1>video automatisation</h1>
 
-![gif image](dodji.gif)
-![png image](dodji.png)
+<p align="center">
+  <img src="dodji.gif" style="width: 400px; height: auto; display: inline-block; margin-right: 5%;" />
+  <img src="dodji.png" style="width: 400px; height: auto; display: inline-block;" />
+</p>
+
+
 
 
 

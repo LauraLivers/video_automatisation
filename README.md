@@ -1,5 +1,9 @@
 <h1>video automatisation</h1>
 
+<img src="dodji.gif" style="display:inline-block; width: 45%; margin-right: 5%;" />
+<img src="dodji.tiff" style="display:inline-block; width: 45%;" />
+
+
 _2025 HS DIGCRE - laura livers_
 
 this framework was created as a proof-of-concept semester project   

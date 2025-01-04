@@ -1,7 +1,8 @@
 <h1>video automatisation</h1>
 
-<img src="dodji.gif" style="display:inline-block; width: 45%; margin-right: 5%;" />
-<img src="dodji.png" style="display:inline-block; width: 45%;" />
+![gif image](dodji.gif)
+![png image](dodji.png)
+
 
 
 _2025 HS DIGCRE - laura livers_
